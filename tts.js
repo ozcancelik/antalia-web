@@ -3,19 +3,21 @@
 // ../antalia/export/verify.py checks the same math in Python.
 import { normalize, turkishLower } from "./normalize.js";
 
-const ORT = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/";
+export const ORT = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/";
 let ort = null;
 
 // Model files are kept in Cache Storage, so they download once. Bump the version when anything in models/ changes;
 // older caches are deleted on the next load.
 const CACHE = "antalia-models-v1";
 
-// Fetches a file, reporting bytes as they arrive: the flow graph alone is 570 MB.
-async function bytes(url, onBytes = () => {}) {
+// Fetches a file, reporting bytes as they arrive: the flow graph alone is 570 MB. `name` is the cache to keep it in;
+// older versions of that cache (same name, lower number) are deleted.
+export async function bytes(url, onBytes = () => {}, name = CACHE) {
   let cache = null;
   try {
-    for (const key of await caches.keys()) if (key.startsWith("antalia-models-") && key !== CACHE) await caches.delete(key);
-    cache = await caches.open(CACHE);
+    const family = name.replace(/\d+$/, "");
+    for (const key of await caches.keys()) if (key.startsWith(family) && key !== name) await caches.delete(key);
+    cache = await caches.open(name);
   } catch {} // no Cache Storage outside a secure context: plain fetch
   const hit = await cache?.match(url).catch(() => null);
   if (hit) {
@@ -151,6 +153,7 @@ export class Antalia {
   constructor(meta, sessions, backend) {
     Object.assign(this, sessions);
     this.backend = backend;
+    this.rate = RATE;
     this.meta = meta;
     this.recipe = meta.recipe;
     this.stoi = new Map(meta.vocab.map((ch, i) => [ch, i]));
@@ -236,13 +239,13 @@ export class Antalia {
   }
 }
 
-export function wavBlob(chunks) {
+export function wavBlob(chunks, rate = RATE) {
   const n = chunks.reduce((a, c) => a + c.length, 0);
   const buf = new ArrayBuffer(44 + 2 * n), v = new DataView(buf);
   const str = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
   str(0, "RIFF"); v.setUint32(4, 36 + 2 * n, true); str(8, "WAVEfmt ");
   v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
-  v.setUint32(24, RATE, true); v.setUint32(28, RATE * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
   str(36, "data"); v.setUint32(40, 2 * n, true);
   let o = 44;
   for (const c of chunks) for (const x of c) { v.setInt16(o, Math.round(Math.max(-1, Math.min(1, x)) * 32767), true); o += 2; }

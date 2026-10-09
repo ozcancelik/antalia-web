@@ -14,6 +14,10 @@ https://huggingface.co/ozcancelik/antalia-1-onnx:
 - BigVGAN v2 (nvidia/bigvgan_v2_24khz_100band_256x) by NVIDIA, MIT.
   https://huggingface.co/nvidia/bigvgan_v2_24khz_100band_256x
 
+The page can also load Antalia-2 Mini by Patientdesk.ai (Apache-2.0), ONNX files and text frontend data
+from https://huggingface.co/spaces/cloud0day3/antalia-mini (model: https://huggingface.co/cloud0day3/antalia-mini).
+mini/tts.js and mini/frontend.js are copied unchanged from that Space (Apache-2.0).
+
 normalize.js is a JavaScript port of turkish_tts/normalize.py, and tts.js reimplements the
 chunking and sampling of turkish_tts/crossflow*.py, from https://github.com/0daycloud/antalia
 (Apache-2.0).
