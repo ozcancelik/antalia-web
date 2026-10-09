@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Antalia 1 · Tarayıcıda Türkçe seslendirme</title>
+<meta name="description" content="Açık Türkçe metin okuma modeli Antalia 1, tamamen tarayıcınızda, ekran kartınızda çalışır. Metin cihazınızdan çıkmaz. Üretilen sesler yapay zekâ ürünüdür.">
+<meta name="theme-color" content="#14123a">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Antalia 1">
+<meta property="og:locale" content="tr_TR">
+<meta property="og:title" content="Antalia 1 · Tarayıcıda Türkçe seslendirme">
+<meta property="og:description" content="Açık Türkçe TTS modeli Antalia 1, sunucu olmadan, ekran kartınızda (WebGPU) çalışır.">
+<meta property="og:url" content="https://antalia-web.vercel.app/">
+<meta property="og:image" content="https://antalia-web.vercel.app/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Antalia 1: Türkçe seslendirme, ekran kartınızda.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Antalia 1 · Tarayıcıda Türkçe seslendirme">
+<meta name="twitter:description" content="Açık Türkçe TTS modeli, sunucu olmadan ekran kartınızda çalışır.">
+<meta name="twitter:image" content="https://antalia-web.vercel.app/og.jpg">
+<link rel="canonical" href="https://antalia-web.vercel.app/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@300;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --base: #14123a;
+    --ink: #eef0ff;
+    --muted: #c3c3e6;
+    --faint: rgba(238, 240, 255, 0.26);
+    --violet: #8b7dff;
+    --accent: #ffffff;
+    --accent-ink: #1a1440;
+    --focus: #ffd29a;
+    --glass: rgba(20, 16, 52, 0.42);
+    --line: rgba(255, 255, 255, 0.16);
+    --display: "Unbounded", "Onest", system-ui, sans-serif;
+    --body: "Onest", system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: radial-gradient(60% 60% at 20% 30%, #4a2f9e 0%, transparent 70%),
+                radial-gradient(50% 50% at 80% 40%, #8f2a63 0%, transparent 70%),
+                radial-gradient(70% 60% at 50% 100%, #1b2f7a 0%, transparent 70%), var(--base);
+    color: var(--ink); font: 15px/1.5 var(--body); overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  canvas#aura { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .stage { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; pointer-events: none;
+           padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); }
+
+  /* top bar */
+  .top, .dock { pointer-events: auto; }
+  .top { display: flex; align-items: center; gap: 16px; }
+  .mark { margin: 0; font: 500 15px/1 var(--display); letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+  .mark svg { width: 18px; height: 18px; }
+  .meta { margin-left: auto; display: flex; gap: 18px; color: var(--muted); font-size: 13px;
+          font-variant-numeric: tabular-nums; }
+  .meta b { color: var(--ink); font-weight: 500; }
+  .icon-btn { background: transparent; border: 1px solid var(--line); border-radius: 10px; width: 36px; height: 36px;
+              display: grid; place-items: center; cursor: pointer; color: var(--muted); }
+  .icon-btn:hover { color: var(--ink); border-color: rgba(160, 170, 255, 0.35); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* the words sit above the arc, which the shader draws 20% of the height below centre (30% from the bottom) */
+  .words { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(30vh + 64px);
+           width: min(1100px, calc(100% - 32px)); text-align: center; pointer-events: none; }
+  .lead { font: 300 clamp(28px, 4.4vw, 58px)/1.12 var(--display); letter-spacing: -0.035em; margin: 0;
+          text-wrap: balance; }
+  .lead .w { color: var(--faint); transition: color .25s ease, text-shadow .25s ease; }
+  .lead .w.said { color: rgba(238, 240, 255, 0.82); }
+  .lead .w.now { color: #fff; text-shadow: 0 0 24px rgba(255, 255, 255, 0.75); }
+  .lead.idle { color: #fff; pointer-events: auto; cursor: pointer; transition: opacity .2s; }
+  .lead.idle:hover { opacity: .85; }
+  .lead { text-shadow: 0 2px 30px rgba(20, 10, 60, 0.35); }
+  .sub { margin: 18px auto 0; max-width: 56ch; color: var(--muted); font-size: 15px; text-wrap: balance; }
+
+  /* composer */
+  .dock { grid-row: 3; align-self: end; justify-self: center; width: min(760px, 100%); display: grid; gap: 10px;
+          position: relative; }
+  .samples { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; font-size: 13px; color: rgba(238, 240, 255, 0.7); }
+  .samples button { background: none; border: 0; padding: 2px 0; color: rgba(238, 240, 255, 0.7); cursor: pointer;
+                    border-bottom: 1px dashed rgba(238, 240, 255, 0.35); }
+  .samples button:hover { color: var(--ink); border-bottom-color: var(--ink); }
+  .composer { display: flex; align-items: end; gap: 8px; padding: 8px; border-radius: 18px;
+              background: var(--glass); border: 1px solid var(--line);
+              backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
+              box-shadow: 0 20px 60px rgba(10, 6, 40, 0.35); }
+  .composer textarea { flex: 1; min-width: 0; resize: none; border: 0; background: transparent; padding: 10px 10px;
+                       max-height: 9.5em; min-height: 2.6em; line-height: 1.5; outline: none; }
+  .composer textarea::placeholder { color: rgba(154, 160, 200, 0.75); }
+  .speak { background: var(--accent); color: var(--accent-ink); border: 1px solid transparent; border-radius: 12px; padding: 0 18px;
+           height: 42px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+           box-shadow: 0 0 0 0 rgba(255, 179, 92, 0); transition: box-shadow .3s ease, opacity .2s; white-space: nowrap; }
+  .speak:hover:not(:disabled) { box-shadow: 0 0 28px rgba(255, 255, 255, 0.45); }
+  .speak:disabled { opacity: .45; cursor: default; }
+  .speak.stop { background: transparent; color: var(--ink); border-color: rgba(255, 255, 255, 0.6); }
+  .speak svg { width: 15px; height: 15px; }
+  .speak .i-stop, .speak.stop .i-play { display: none; }
+  .speak.stop .i-stop { display: block; }
+  /* all labels share one cell so the button is always as wide as the longest one */
+  .speak .label { display: grid; }
+  .speak .label > span { grid-area: 1 / 1; text-align: center; visibility: hidden; }
+  .speak[data-mode=loading] [data-mode=loading], .speak[data-mode=speak] [data-mode=speak],
+  .speak[data-mode=stop] [data-mode=stop] { visibility: visible; }
+  .composer .icon-btn { width: 42px; height: 42px; border-radius: 12px; flex: none; }
+  .composer .icon-btn svg { width: 18px; height: 18px; }
+  .hint { text-align: center; font-size: 12px; color: rgba(238, 240, 255, 0.6); min-height: 1.5em; }
+  .hint.err { color: #ff9b9b; }
+  .credit { text-align: center; font-size: 11px; line-height: 1.5; color: rgba(238, 240, 255, 0.45); text-wrap: balance; }
+  .credit a { color: inherit; }
+  .progress { position: fixed; left: 50%; transform: translateX(-50%); top: 64px; font-size: 13px; color: var(--muted);
+              font-variant-numeric: tabular-nums; pointer-events: none; }
+
+  .settings { position: absolute; right: 0; bottom: calc(100% + 8px); width: 280px; padding: 16px; border-radius: 16px;
+              background: rgba(24, 18, 60, 0.85); border: 1px solid var(--line); display: grid; gap: 14px;
+              backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  .settings label, .settings .group { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  .settings .row { display: flex; justify-content: space-between; }
+  .settings output { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .settings { color-scheme: dark; grid-template-columns: minmax(0, 1fr); }
+  .settings label { min-width: 0; }
+  .settings select { width: 100%; }
+  .settings select, .settings input[type=number] { height: 36px; background-color: rgba(255, 255, 255, 0.05);
+              border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; outline: none;
+              transition: border-color .15s, background-color .15s; }
+  .settings select:hover, .settings input[type=number]:hover { border-color: rgba(160, 170, 255, 0.35); }
+  .settings select:focus-visible, .settings input[type=number]:focus-visible { border-color: var(--focus);
+              outline: none; }
+  .settings select { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 34px;
+              text-overflow: ellipsis;
+              background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c3c3e6' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+              background-repeat: no-repeat; background-position: right 10px center; background-size: 14px; }
+  .settings option { background: #1d1748; color: var(--ink); }
+
+  /* speed slider: thin track, filled up to the thumb via --p */
+  .settings input[type=range] { --p: 40%; appearance: none; -webkit-appearance: none; width: 100%; height: 20px;
+              margin: 0; background: transparent; cursor: pointer; }
+  .settings input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px;
+              background: linear-gradient(90deg, #fff var(--p), rgba(255, 255, 255, 0.16) var(--p)); }
+  .settings input[type=range]::-moz-range-track { height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.16); }
+  .settings input[type=range]::-moz-range-progress { height: 4px; border-radius: 4px; background: #fff; }
+  .settings input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px;
+              border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.12), 0 2px 8px rgba(10, 6, 40, 0.5);
+              transition: box-shadow .15s, transform .15s; }
+  .settings input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 0;
+              box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.12), 0 2px 8px rgba(10, 6, 40, 0.5); }
+  .settings input[type=range]:hover::-webkit-slider-thumb { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.18), 0 2px 8px rgba(10, 6, 40, 0.5); }
+  .settings input[type=range]:active::-webkit-slider-thumb { transform: scale(1.1); }
+  .settings input[type=range]:focus-visible { outline: none; }
+  .settings input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--focus); }
+  .settings input[type=range]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--focus); }
+  .settings .scale { display: flex; justify-content: space-between; font-size: 11px; color: rgba(238, 240, 255, 0.45);
+              font-variant-numeric: tabular-nums; margin-top: -2px; }
+  .settings .note { font-size: 12px; color: rgba(238, 240, 255, 0.55); }
+  .settings .seed { display: flex; gap: 6px; }
+  .settings .seed input { flex: 1; min-width: 0; }
+  .settings .seed button { height: 36px; background: transparent; border: 1px solid var(--line); border-radius: 8px;
+                           padding: 0 12px; color: var(--muted); cursor: pointer; }
+  .settings .seed button:hover { color: var(--ink); border-color: rgba(160, 170, 255, 0.35); }
+  .settings .presets { display: flex; gap: 6px; }
+  .settings .presets button { flex: 1; height: 32px; background: transparent; border: 1px solid var(--line); border-radius: 8px;
+                              color: var(--muted); cursor: pointer; font: inherit; transition: color .15s, border-color .15s, background-color .15s; }
+  .settings .presets button:hover { color: var(--ink); border-color: rgba(160, 170, 255, 0.35); }
+  .settings .presets button[aria-pressed=true] { color: var(--ink); background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.4); }
+  .settings .presets button:focus-visible { outline: none; border-color: var(--focus); }
+
+  @media (max-width: 640px) {
+    .meta .opt { display: none; }
+    .words { bottom: calc(30vh + 40px); }
+    .speak .label { display: none; }
+    .speak { padding: 0 14px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="aura" aria-hidden="true"></canvas>
+
+<div class="stage">
+  <header class="top">
+    <h1 class="mark">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><defs><linearGradient id="wave" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7ab6"/><stop offset=".5" stop-color="#ffb066"/><stop offset="1" stop-color="#5fd4ff"/></linearGradient></defs><path d="M3 10v4M7.5 6v12M12 3v18M16.5 7v10M21 10v4" stroke="url(#wave)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      Antalia 1
+    </h1>
+    <div class="meta" aria-live="polite">
+      <span id="mBackend"></span>
+      <span class="opt" id="mFirst" hidden>ilk ses <b></b></span>
+      <span class="opt" id="mRtf" hidden>hız <b></b></span>
+    </div>
+    <button class="icon-btn" id="download" title="Son sesi WAV olarak indir" aria-label="Son sesi WAV olarak indir" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+    </button>
+    <button class="icon-btn" id="fullscreen" title="Tam ekran (F)" aria-label="Tam ekran">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+    <a class="icon-btn" href="https://github.com/0daycloud/antalia" target="_blank" rel="noopener"
+       title="Modelin kaynak kodu (GitHub)" aria-label="Modelin kaynak kodu GitHub'da">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+    </a>
+  </header>
+
+  <section class="words">
+    <p class="lead idle" id="lead" title="Tıkla, kendim söyleyeyim"></p>
+    <p class="sub" id="sub">Açık Türkçe seslendirme modeli Antalia 1, tamamen tarayıcınızda. Yazdığınız metin cihazınızdan çıkmaz. Cümleye tıklarsanız kendim okurum.</p>
+  </section>
+
+  <footer class="dock">
+    <div class="samples" id="samples"><span>Örnekler:</span></div>
+    <div class="settings" id="settings" hidden>
+      <label><span class="row">Hız <output id="speedOut">1.00×</output></span>
+        <input id="speed" type="range" min="0.75" max="1.3" step="0.05" value="1">
+        <span class="scale" aria-hidden="true"><span>0.75×</span><span>1.3×</span></span>
+      </label>
+      <div class="group">
+        <span class="row">Ses tonu <output id="pitchOut">Doğal</output></span>
+        <div class="presets" id="presets" role="group" aria-label="Hazır ses tonları">
+          <button type="button" data-pitch="-2">Kalın</button><button type="button" data-pitch="0">Normal</button><button type="button" data-pitch="2.5">İnce</button>
+        </div>
+        <input id="pitch" type="range" min="-4" max="4" step="0.5" value="0" aria-label="Ses tonu, yarım ton">
+        <span class="scale" aria-hidden="true"><span>−4</span><span>+4</span></span>
+      </div>
+      <label>Konuşma tarzı
+        <select id="style">
+          <option value="auto">Otomatik (soru ve özürde tarz değişir)</option>
+          <option value="">Düz</option>
+          <option value="warm_voice_agent">Sıcak, asistan</option>
+          <option value="explanations_long_form">Açıklama, uzun metin</option>
+          <option value="numeric_normalization">Sayılar, tarihler</option>
+          <option value="questions_confirmations">Soru, onay</option>
+          <option value="restrained_emotion">Ölçülü duygu</option>
+        </select>
+      </label>
+      <label>Kalite
+        <select id="steps"><option value="16">Hızlı: 16 adım</option><option value="32">Yüksek: 32 adım (iki kat yavaş)</option></select>
+      </label>
+      <label>Seed (aynı seed aynı sesi verir)
+        <span class="seed"><input id="seed" type="number" min="0" value="0"><button id="reseed" type="button">Rastgele</button></span>
+        <span class="note">Sonuç seed'e göre çok değişir; bir cümle kötü çıkarsa başka bir seed deneyin.</span>
+      </label>
+      <label>Çalıştığı yer
+        <select id="backend"><option value="webgpu">Ekran kartı (WebGPU)</option><option value="wasm">İşlemci (WASM), çok yavaş</option></select>
+      </label>
+    </div>
+    <div class="composer">
+      <textarea id="text" rows="1" aria-label="Seslendirilecek metin"
+        placeholder="Bir şey yazın. Sayılar, tarihler ve saatler de okunur: 14:30, ₺1.250…">Merhaba, randevunuzu yarın saat 14:30 için yeniden planladım.</textarea>
+      <button class="icon-btn" id="toggleSettings" title="Ayarlar" aria-label="Ayarlar" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+      </button>
+      <button class="speak" id="speak" data-mode="loading" disabled>
+        <svg class="i-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z"/></svg>
+        <svg class="i-stop" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2.5"/></svg>
+        <span class="label"><span data-mode="loading">Yükleniyor</span><span data-mode="speak">Seslendir</span><span data-mode="stop">Durdur</span></span>
+      </button>
+    </div>
+    <div class="hint" id="hint">⌘/Ctrl + Enter ile seslendirin</div>
+    <div class="credit">Model: <a href="https://huggingface.co/cloud0day3/antalia-1" target="_blank" rel="noopener">Antalia 1</a>,
+      Sezgin Saygili, Emre Kaplaner, Oncel Ozgul, Fikri San Koktas (Patientdesk.ai), Antalia OpenRAIL-M lisansıyla.
+      Vocoder: NVIDIA BigVGAN v2. Buradaki sesler yapay zekâyla üretilir, gerçek bir kişinin kaydı değildir.
+      Kullanım <a href="https://huggingface.co/cloud0day3/antalia-1/blob/main/LICENSE.md" target="_blank" rel="noopener">lisanstaki kısıtlamalara</a> tabidir: kimseyi taklit etmek, aldatmak ya da yapay olduğunu söylemeden kullanmak yasaktır.</div>
+  </footer>
+</div>
+
+<div class="progress" id="progress" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

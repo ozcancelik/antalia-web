@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="tr">
+<meta charset="utf-8">
+<title>Antalia 1 · bench</title>
+<style>body { font: 14px/1.5 system-ui; margin: 24px; max-width: 900px; } pre { white-space: pre-wrap; }</style>
+<p>
+  <select id="backend"><option value="webgpu">webgpu</option><option value="wasm">wasm</option></select>
+  steps <input id="steps" type="number" value="16" style="width:4em">
+  seed <input id="seed" type="number" value="0" style="width:6em">
+  <button id="go">load + speak</button>
+</p>
+<textarea id="text" rows="3" cols="90">Merhaba, randevunuzu yarın saat on dört otuz için yeniden planladım.</textarea>
+<p><audio id="audio" controls></audio></p>
+<pre id="log"></pre>
+<script type="module">
+import { Antalia, RATE, wavBlob } from "./tts.js";
+const $ = (id) => document.getElementById(id);
+const log = (s) => { $("log").textContent += s + "\n"; console.log("[bench] " + s); };
+let model = null;
+$("go").onclick = async () => {
+  try {
+    if (!model || model.backend !== $("backend").value) {
+      await model?.release();
+      const t0 = performance.now();
+      let last = 0;
+      model = await Antalia.load($("backend").value, "models/", (stage, p) => {
+        if (p - last > 0.1 || p === 1) { last = p; log(`${stage} ${(p * 100).toFixed(0)}%`); }
+      });
+      log(`loaded in ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+    }
+    const stats = {}, chunks = [], t0 = performance.now();
+    let first = null;
+    for await (const c of model.stream($("text").value, { steps: +$("steps").value, seed: +$("seed").value, stats })) {
+      first ??= performance.now() - t0;
+      chunks.push(c);
+    }
+    const secs = chunks.reduce((a, c) => a + c.length, 0) / RATE, total = (performance.now() - t0) / 1000;
+    let peak = 0, nan = 0;
+    for (const c of chunks) for (const x of c) { if (Number.isNaN(x)) nan++; else peak = Math.max(peak, Math.abs(x)); }
+    log(`pieces ${JSON.stringify(stats.pieces)}`);
+    log(`audio ${secs.toFixed(2)} s in ${total.toFixed(2)} s (RTF ${(total / secs).toFixed(2)}), first ${(first / 1000).toFixed(2)} s; ` +
+        `text ${stats.text.toFixed(0)} ms, flow ${stats.flow.toFixed(0)} ms, vocoder ${stats.vocoder.toFixed(0)} ms; peak ${peak.toFixed(3)}, NaN ${nan}`);
+    $("audio").src = URL.createObjectURL(wavBlob(chunks));
+    window.lastChunks = chunks;
+  } catch (e) { log("ERROR " + e.message); console.error(e); }
+};
+</script>

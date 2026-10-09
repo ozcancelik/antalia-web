@@ -1,0 +1,23 @@
+antalia-web
+Licensed under the Apache License, Version 2.0 (see LICENSE). This covers the code in this
+repository only; the model files it loads are under their own licenses, below.
+
+The page loads, at run time, ONNX files derived from works by others, hosted at
+https://huggingface.co/ozcancelik/antalia-1-onnx:
+
+- Antalia 1 by Sezgin Saygili, Emre Kaplaner, Oncel Ozgul and Fikri San Koktas (Patientdesk.ai),
+  Antalia OpenRAIL-M. https://huggingface.co/cloud0day3/antalia-1, https://github.com/0daycloud/antalia
+  Modifications: converted to ONNX (text, flow, vocoder graphs), the released voice baked in,
+  partly converted to fp16. The full list is in the model card of the repository above.
+  Use of the model and its output is subject to the use-based restrictions of that license.
+
+- BigVGAN v2 (nvidia/bigvgan_v2_24khz_100band_256x) by NVIDIA, MIT.
+  https://huggingface.co/nvidia/bigvgan_v2_24khz_100band_256x
+
+normalize.js is a JavaScript port of turkish_tts/normalize.py, and tts.js reimplements the
+chunking and sampling of turkish_tts/crossflow*.py, from https://github.com/0daycloud/antalia
+(Apache-2.0).
+
+aura.js comes from ema-lightning-web by the same author.
+
+onnxruntime-web (MIT, Microsoft) is loaded from a CDN at run time and is not redistributed here.
