@@ -1,4 +1,4 @@
-import { Antalia, FILES, wavBlob } from "./tts.js";
+import { Antalia, FILES, isCached, wavBlob } from "./tts.js";
 import { AntaliaMini } from "./mini.js";
 import { createAura } from "./aura.js";
 
@@ -40,7 +40,7 @@ const MODELS = {
             "Küçüğüm ama hızlıyım."],
   },
 };
-let modelKey = "antalia-1";
+let modelKey = "mini"; // the default: small enough to load without asking
 const current = () => MODELS[modelKey];
 
 let aura = null;
@@ -146,6 +146,7 @@ $("toggleSettings").onclick = () => {
   fitSettings();
 };
 document.addEventListener("click", (e) => {
+  if (!$("ask").hidden && !e.target.closest(".switch")) closeAsk();
   if (!$("settings").hidden && !e.target.closest("#settings, #toggleSettings")) {
     $("settings").hidden = true; $("toggleSettings").setAttribute("aria-expanded", "false");
   }
@@ -153,6 +154,7 @@ document.addEventListener("click", (e) => {
 $("fullscreen").onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
 document.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); $("speak").click(); }
+  else if (e.key === "Escape" && !$("ask").hidden) closeAsk();
   else if (e.key === "Escape" && playing) stop();
   else if ((e.key === "f" || e.key === "F") && !e.target.closest("textarea, input, select")) $("fullscreen").click();
 });
@@ -204,12 +206,30 @@ async function loadModel() {
   }
 }
 $("backend").onchange = () => { if (playing) stop(); load(); };
-for (const b of $("models").children) b.onclick = () => {
-  if (b.dataset.model === modelKey) return;
-  modelKey = b.dataset.model;
+function switchModel(key) {
+  modelKey = key;
   if (playing) stop();
   fillSteps(); showModel(); saveSettings(); idleLead(); load();
+}
+// A big model that is not cached yet asks first: Antalia 1 is a 900 MB download.
+let asking = null;
+function closeAsk() { $("ask").hidden = true; asking = null; }
+for (const b of $("models").children) b.onclick = async () => {
+  const key = b.dataset.model, m = MODELS[key];
+  closeAsk();
+  if (key === modelKey) return;
+  if (m.mb > 100 && !(await isCached(m.base + "flow.onnx"))) {
+    asking = key;
+    $("askName").textContent = m.name;
+    $("askSize").textContent = Math.round(m.mb / 100) * 100;
+    $("ask").hidden = false;
+    $("askGo").focus();
+    return;
+  }
+  switchModel(key);
 };
+$("askGo").onclick = () => { const key = asking; closeAsk(); if (key) switchModel(key); };
+$("askCancel").onclick = closeAsk;
 
 function audioGraph() {
   if (audio) return audio;

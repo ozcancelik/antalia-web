@@ -65,13 +65,25 @@
   .meta { margin-left: auto; display: flex; gap: 18px; color: var(--muted); font-size: 13px;
           font-variant-numeric: tabular-nums; }
   .meta b { color: var(--ink); font-weight: 500; }
-  .models { margin-left: auto; display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; }
-  .models + .meta { margin-left: 0; }
+  .switch { margin-left: auto; position: relative; }
+  .switch + .meta { margin-left: 0; }
+  .models { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; }
   .models button { height: 28px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: var(--muted);
                    font: inherit; font-size: 13px; cursor: pointer; transition: color .15s, background-color .15s; }
   .models button:hover { color: var(--ink); }
   .models button[aria-pressed=true] { color: var(--ink); background: rgba(255, 255, 255, 0.14); }
   .models button:focus-visible { outline-offset: 0; }
+  .ask { position: absolute; top: calc(100% + 8px); right: 0; z-index: 5; width: 290px; padding: 14px; border-radius: 14px;
+         display: grid; gap: 12px; background: rgba(24, 18, 60, 0.92); border: 1px solid var(--line); color: var(--muted);
+         font-size: 13px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  .ask[hidden] { display: none; }
+  .ask p { margin: 0; }
+  .ask b { color: var(--ink); font-weight: 500; }
+  .ask .actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .ask button { height: 30px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: transparent;
+                color: var(--muted); font: inherit; cursor: pointer; }
+  .ask button:hover { color: var(--ink); border-color: rgba(160, 170, 255, 0.35); }
+  .ask button.go { background: #fff; border-color: #fff; color: #14123a; font-weight: 500; }
   .icon-btn { background: transparent; border: 1px solid var(--line); border-radius: 10px; width: 36px; height: 36px;
               display: grid; place-items: center; cursor: pointer; color: var(--muted); }
   .icon-btn:hover { color: var(--ink); border-color: rgba(160, 170, 255, 0.35); }
@@ -198,9 +210,16 @@
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><defs><linearGradient id="wave" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7ab6"/><stop offset=".5" stop-color="#ffb066"/><stop offset="1" stop-color="#5fd4ff"/></linearGradient></defs><path d="M3 10v4M7.5 6v12M12 3v18M16.5 7v10M21 10v4" stroke="url(#wave)" stroke-width="2.4" stroke-linecap="round"/></svg>
       Antalia
     </h1>
-    <div class="models" id="models" role="group" aria-label="Model">
-      <button type="button" data-model="antalia-1" title="Yüksek kalite · 900 MB, ekran kartı ister">Antalia 1</button>
-      <button type="button" data-model="mini" title="Hızlı ve hafif · 23 MB, işlemcide de hızlı">Mini</button>
+    <div class="switch">
+      <div class="models" id="models" role="group" aria-label="Model">
+        <button type="button" data-model="mini" title="Hızlı ve hafif · 23 MB, işlemcide de hızlı">Mini</button>
+        <button type="button" data-model="antalia-1" title="Yüksek kalite · 900 MB, ekran kartı ister">Antalia 1</button>
+      </div>
+      <div class="ask" id="ask" role="dialog" aria-labelledby="askText" hidden>
+        <p id="askText"><b><span id="askName"></span> yaklaşık <span id="askSize"></span> MB indirir.</b> Bir kez iner, sonra
+          tarayıcıda saklanır. Ekran kartı (WebGPU) ister; mobil veride indirmemenizi öneririz.</p>
+        <div class="actions"><button type="button" id="askCancel">Vazgeç</button><button type="button" class="go" id="askGo">İndir</button></div>
+      </div>
     </div>
     <div class="meta" aria-live="polite">
       <span id="mBackend"></span>

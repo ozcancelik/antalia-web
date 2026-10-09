@@ -43,6 +43,11 @@ export async function bytes(url, onBytes = () => {}, name = CACHE) {
   return buf.buffer;
 }
 
+// Whether a file is already in Cache Storage, so loading it costs no download.
+export async function isCached(url, name = CACHE) {
+  try { return !!(await (await caches.open(name)).match(url)); } catch { return false; }
+}
+
 export const RATE = 24000;
 export const FILES = { text: 78.3e6, flow: 570.2e6, vocoder: 252.4e6 }; // for progress before content-length arrives
 

@@ -8,10 +8,12 @@ ekran kartında (WebGPU) çalışır; Mini 23 MB'tır, ekran kartında da işlem
 A browser demo of Antalia 1 (304.6M-parameter Turkish rectified-flow TTS) with NVIDIA BigVGAN v2 as vocoder: ONNX
 graphs on onnxruntime-web (WebGPU, WASM fallback), the model's own text normalizer ported to JavaScript.
 
-A selector in the settings switches to **Antalia Mini** ([cloud0day3/antalia-mini](https://huggingface.co/cloud0day3/antalia-mini),
+The page starts with **Antalia Mini** ([cloud0day3/antalia-mini](https://huggingface.co/cloud0day3/antalia-mini),
 7.6M parameters, 48 kHz, Apache-2.0): about 23 MB instead of 900 MB, run in a Web Worker on WebGPU or the CPU,
 faster than real time either way (on an Apple laptop, Chrome, 8 steps: about 18× real time on WebGPU with first audio
 after 0.3 s, 5.5× on one CPU thread with first audio after 0.8 s). Lower quality and a single voice; speaking styles do not apply to it.
+The switch in the header loads Antalia 1 instead, after asking first unless its files are already cached, since they
+are a 900 MB download.
 
 **Canlı:** https://antalia-web.vercel.app/ · **Kod:** https://github.com/ozcancelik/antalia-web
 
