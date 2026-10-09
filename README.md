@@ -6,6 +6,8 @@ Model ekran kartında (WebGPU) çalışır; yazdığınız metin cihazınızdan 
 A browser demo of Antalia 1 (304.6M-parameter Turkish rectified-flow TTS) with NVIDIA BigVGAN v2 as vocoder: ONNX
 graphs on onnxruntime-web (WebGPU, WASM fallback), the model's own text normalizer ported to JavaScript.
 
+**Canlı:** https://antalia-web.vercel.app/ · **Kod:** https://github.com/ozcancelik/antalia-web
+
 **Model dosyaları:** [huggingface.co/ozcancelik/antalia-1-onnx](https://huggingface.co/ozcancelik/antalia-1-onnx)
 
 ## Model files
