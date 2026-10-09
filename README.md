@@ -31,8 +31,7 @@ Antalia Mini's ONNX graphs, text frontend data and manifest are loaded from its 
 ([cloud0day3/antalia-mini](https://huggingface.co/spaces/cloud0day3/antalia-mini)), pinned to a commit (`MINI_REVISION`
 in `app.js`, cache name `CACHE` in `mini/worker.js`).
 
-To update them: rebuild with the tools in `../antalia` (see its README), upload to the Hub, then set `HF_REVISION` to
-the new commit and bump `CACHE` in `tts.js`.
+To update them: upload the new files to the Hub, then set `HF_REVISION` to the new commit and bump `CACHE` in `tts.js`.
 
 ## Run
 
@@ -40,8 +39,7 @@ the new commit and bump `CACHE` in `tts.js`.
 python3 -m http.server 8766    # then open http://localhost:8766
 ```
 
-WebGPU needs `localhost` or HTTPS. For local runs, put the model files in `models/`, either built with `../antalia` or
-downloaded:
+WebGPU needs `localhost` or HTTPS. For local runs, download the model files into `models/`:
 
 ```sh
 hf download ozcancelik/antalia-1-onnx text.onnx flow.onnx vocoder.onnx meta.json --local-dir models
@@ -58,11 +56,10 @@ real time.
 
 - `index.html`, `app.js` the page; `aura.js` the WebGL2 background, driven by the audio
 - `tts.js` the engine: chunking, prosody presets, the guided Euler sampler loop, vocoding
-- `normalize.js` port of `turkish_tts/normalize.py` (checked against Python by `../antalia/tools/check_normalize.py`)
+- `normalize.js` port of `turkish_tts/normalize.py`
 - `mini.js` Antalia Mini behind the same interface as `tts.js`; `mini/worker.js` runs it off the main thread;
   `mini/tts.js` and `mini/frontend.js` are copied unchanged from the model's Space
-- `bench.html` timing page (Antalia 1)
-- `og.jpg`, `favicon.svg` share card (made by `../antalia/tools/make_og.py`) and icon
+- `og.jpg`, `favicon.svg` share card and icon
 - `models/` `text.onnx` (fp32), `flow.onnx` and `vocoder.onnx` (fp16 with fp32 islands), `meta.json`
 
 The same seed does not give the same audio as the Python package: noise comes from a JavaScript PRNG.

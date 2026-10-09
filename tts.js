@@ -1,6 +1,5 @@
 // Antalia 1 in the browser: text -> 24 kHz audio with onnxruntime-web (WebGPU, or WASM as fallback).
-// Mirrors turkish_tts.crossflow_train (_chunk_text, _synthesize_loaded_crossflow) and CrossFlow.sample;
-// ../antalia/export/verify.py checks the same math in Python.
+// Mirrors turkish_tts.crossflow_train (_chunk_text, _synthesize_loaded_crossflow) and CrossFlow.sample.
 import { normalize, turkishLower } from "./normalize.js";
 
 export const ORT = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/";
